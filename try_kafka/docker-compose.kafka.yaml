@@ -1,0 +1,108 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+services:
+#  oap:
+#    container_name: oap
+#    image: apache/skywalking-oap-server:9.3.0
+#    # Python agent supports gRPC/ HTTP/ Kafka reporting
+#    expose:
+#      - 11800 # gRPC
+#      - 12800 # HTTP
+#    networks:
+#      - manual
+#    environment:
+#      SW_KAFKA_FETCHER: default
+#      SW_KAFKA_FETCHER_SERVERS: kafka:9092
+#      SW_KAFKA_FETCHER_PARTITIONS: 2
+#      SW_KAFKA_FETCHER_PARTITIONS_FACTOR: 1
+#    healthcheck:
+#      test: [ "CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/127.0.0.1/11800" ]
+#      interval: 5s
+#      timeout: 60s
+#      retries: 120
+#    ports:
+#      - "12800:12800"
+#      - "11800:11800"
+#    depends_on:
+#      - kafka
+#
+#
+#  ui:
+#    image: apache/skywalking-ui:9.3.0
+#    container_name: ui
+#    depends_on:
+#      oap:
+#        condition: service_healthy
+#    networks:
+#      - manual
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      SW_OAP_ADDRESS: "http://oap:12800"
+
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8088:8080"
+    restart: always
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - manual
+
+  kafka:
+    image: bitnami/kafka:latest
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+      - "9094:9094"
+    expose:
+      - "9092"
+      - "9093"
+      - "9094"
+    volumes:
+      - "kafka_data:/bitnami"
+    #entrypoint: /bin/sleep infinity
+    environment:
+    - BITNAMI_DEBUG=yes
+    - KAFKA_ENABLE_KRAFT=yes
+    - KAFKA_CFG_PROCESS_ROLES=broker,controller
+    - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+    - KAFKA_CFG_LISTENERS=CONTROLLER://:9094,PLAINTEXT://:9092,EXTERNAL://:9093
+    - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+    - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+    - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@127.0.0.1:9094
+    - ALLOW_PLAINTEXT_LISTENER=yes
+    - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9093
+    - KAFKA_CFG_BROKER_ID=1
+    - KAFKA_BROKER_ID=1
+    - KAFKA_CFG_DELETE_TOPIC_ENABLE=true
+
+    networks:
+      - manual
+volumes:
+  kafka_data:
+    driver: local
+networks:
+  manual:
