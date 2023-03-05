@@ -1,3 +1,5 @@
 confluent-kafka
 apache-flink
 sklearn
+grpcio
+grpcio-tools
