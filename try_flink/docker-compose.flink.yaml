@@ -11,6 +11,9 @@ services:
         jobmanager.rpc.address: jobmanager        
     volumes:
         - .:/opt/flink/jobs
+    networks:
+      - manual
+
   taskmanager:
     image: sheltonzsl/pyflink:latest
     depends_on:
@@ -21,4 +24,58 @@ services:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 2 
+        taskmanager.numberOfTaskSlots: 20
+    networks:
+      - manual
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8088:8080"
+    restart: always
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - manual
+
+  kafka:
+    image: bitnami/kafka:latest
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+      - "9094:9094"
+    expose:
+      - "9092"
+      - "9093"
+      - "9094"
+    volumes:
+      - "kafka_data:/bitnami"
+    #entrypoint: /bin/sleep infinity
+    environment:
+    - BITNAMI_DEBUG=yes
+    - KAFKA_ENABLE_KRAFT=yes
+    - KAFKA_CFG_PROCESS_ROLES=broker,controller
+    - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+    - KAFKA_CFG_LISTENERS=CONTROLLER://:9094,PLAINTEXT://:9092,EXTERNAL://:9093
+    - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+    - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+    - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@127.0.0.1:9094
+    - ALLOW_PLAINTEXT_LISTENER=yes
+    - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9093
+    - KAFKA_CFG_BROKER_ID=1
+    - KAFKA_BROKER_ID=1
+    - KAFKA_CFG_DELETE_TOPIC_ENABLE=true
+
+    networks:
+      - manual
+volumes:
+  kafka_data:
+    driver: local
+
+networks:
+  manual:
