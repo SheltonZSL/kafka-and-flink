@@ -24,33 +24,32 @@ def delivery_report(err, msg):
 
 def produce_to_kafka():
     # create a new topic with 10 partitions
-    a.create_topics([NewTopic('log_topic', num_partitions=10, replication_factor=1)])
+    a.create_topics([NewTopic('HDFS_log', num_partitions=10, replication_factor=1)])
     counter = 0
     checkpoint = 0
     last_counter = 0
-    while 1:
-        time.sleep(1)  # 0.035 s is about equilibrium
-        for log_data_raw, proto_log_data in log_generator():
-            p.poll(0)
 
-            counter += 1
-            if time.time() - checkpoint >= 1:
-                print("Produced {} messages in 1 seconds".format(counter - last_counter))
-                checkpoint = time.time()
-                last_counter = counter
+    for log_data_raw, proto_log_data in log_generator():
+        p.poll(0)
 
-            # Asynchronously produce a message. The delivery report callback will
-            # be triggered from the call to poll() above, or flush() below, when the
-            # message has been successfully delivered or failed permanently.
-            log_value = proto_log_data.body.SerializeToString()
+        counter += 1
+        if time.time() - checkpoint >= 1:
+            print("Produced {} messages in 1 seconds".format(counter - last_counter))
+            checkpoint = time.time()
+            last_counter = counter
 
-            print(log_data_raw)
-            log_key = proto_log_data.service.encode('utf-8')
-            p.produce(topic='log_topic', key=log_key, value=log_data_raw)  # , callback=delivery_report)
+        # Asynchronously produce a message. The delivery report callback will
+        # be triggered from the call to poll() above, or flush() below, when the
+        # message has been successfully delivered or failed permanently.
+        log_value = proto_log_data.body.SerializeToString()
 
-        # Wait for any outstanding messages to be delivered and delivery report
-        # callbacks to be triggered.
-        p.flush()
+        log_key = proto_log_data.service.encode('utf-8')
+        p.produce(topic='HDFS_log', key=log_key, value=log_data_raw.encode('utf-8'))
+        # , callback=delivery_report)
+
+    # Wait for any outstanding messages to be delivered and delivery report
+    # callbacks to be triggered.
+    p.flush()
 
 
 if __name__ == '__main__':

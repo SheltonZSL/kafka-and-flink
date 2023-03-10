@@ -6,7 +6,7 @@ from try_kafka.protocol.common.Common_pb2 import KeyStringValuePair
 
 def log_generator():
     """Generate log data from a file, with fake skywalking tracing context."""
-    with open(file='hadoop-28-min.log') as infile:
+    with open(file='HDFS.log') as infile:
         for log in infile:
             log_text = TextLog(text=log)
 
